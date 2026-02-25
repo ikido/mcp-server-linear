@@ -173,8 +173,8 @@ export class IssueHandler extends BaseHandler implements IssueHandlerMethods {
       if (args.states) {
         filter.state = { name: { in: args.states } };
       }
-      if (typeof args.priority === "number") {
-        filter.priority = { eq: args.priority };
+      if (args.priority !== undefined && args.priority !== null) {
+        filter.priority = { eq: Number(args.priority) };
       }
 
       const result = (await client.searchIssues(
@@ -291,10 +291,19 @@ export class IssueHandler extends BaseHandler implements IssueHandlerMethods {
         "sortOrder",
       ];
 
+      const numericFields: (keyof EditIssueInput)[] = [
+        "priority",
+        "estimate",
+        "sortOrder",
+      ];
+
       optionalFields.forEach((field) => {
         // Check for undefined or null, allowing empty strings and 0
         if (args[field] !== undefined && args[field] !== null) {
-          updateInput[field] = args[field];
+          // Coerce numeric fields — MCP HTTP transports may stringify numbers
+          updateInput[field] = numericFields.includes(field)
+            ? Number(args[field])
+            : args[field];
         }
       });
 
